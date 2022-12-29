@@ -97,13 +97,22 @@ const run = async () => {
     });
 
     app.get('/tasks/uid/:uid', async (req, res) => {
-      const email = req.params.uid;
+      const uid = req.params.uid;
+      const { status } = req.query;
 
       const page = parseInt(req.query.page) || 1;
       const size = parseInt(req.query.size) || 10;
       const skip = (page - 1) * size;
 
-      const query = { "author.email": email }
+      let query = { author: uid }
+
+      if (status && status === 'processing') {
+        query = { $and: [{ author: uid }, { status: 'processing' }] }
+      }
+      else if (status && status === 'completed') {
+        query = { $and: [{ author: uid }, { status: 'completed' }] }
+      }
+
       const cursor = tasksCollection.find(query).sort({ date: -1 });
       const tasks = await cursor.skip(skip).limit(size).toArray();
 
@@ -131,6 +140,8 @@ const run = async () => {
     app.patch('/tasks/:id', async (req, res) => {
       const id = req.params.id;
       const updateObject = req.body;
+
+      console.log(id, updateObject);
 
       const query = { _id: ObjectId(id) }
       const updatedDoc = {
