@@ -49,35 +49,38 @@ const run = async () => {
     app.post('/jwt', async (req, res) => {
       const user = req.body;
 
-      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '1h' });
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, { expiresIn: '365d' });
 
       res.send({ token });
     });
 
-    app.get('/tasks', async (req, res) => {
-      const page = parseInt(req.query.page) || 1;
-      const size = parseInt(req.query.size) || 10;
-      const skip = (page - 1) * size;
-
-      const query = {}
-      const cursor = tasksCollection.find(query).sort({ _id: -1 });
-      const tasks = await cursor.skip(skip).limit(size).toArray();
-
-      const totalRecord = await tasksCollection.estimatedDocumentCount();
-      const total = Math.ceil(totalRecord / size);
-
-      const data = {
-        data: tasks,
-        pagination: {
-          total,
-          current: page,
+    /* 
+      app.get('/tasks', verifyJWT, async (req, res) => {
+        const page = parseInt(req.query.page) || 1;
+        const size = parseInt(req.query.size) || 10;
+        const skip = (page - 1) * size;
+  
+        const query = {}
+        const cursor = tasksCollection.find(query).sort({ _id: -1 });
+        const tasks = await cursor.skip(skip).limit(size).toArray();
+  
+        const totalRecord = await tasksCollection.estimatedDocumentCount();
+        const total = Math.ceil(totalRecord / size);
+  
+        const data = {
+          data: tasks,
+          pagination: {
+            total,
+            current: page,
+          }
         }
-      }
+  
+        res.send(data);
+      });
+    */
 
-      res.send(data);
-    });
 
-    app.get('/tasks/:id', async (req, res) => {
+    app.get('/tasks/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
 
       if (ObjectId.isValid(id)) {
@@ -96,7 +99,8 @@ const run = async () => {
       }
     });
 
-    app.get('/tasks/uid/:uid', async (req, res) => {
+
+    app.get('/tasks/uid/:uid', verifyJWT, async (req, res) => {
       const uid = req.params.uid;
       const { status } = req.query;
 
@@ -130,18 +134,16 @@ const run = async () => {
       res.send(data);
     });
 
-    app.post('/tasks', async (req, res) => {
+    app.post('/tasks', verifyJWT, async (req, res) => {
       const data = req.body;
       const result = await tasksCollection.insertOne(data);
 
       res.send(result);
     });
 
-    app.patch('/tasks/:id', async (req, res) => {
+    app.patch('/tasks/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
       const updateObject = req.body;
-
-      console.log(id, updateObject);
 
       const query = { _id: ObjectId(id) }
       const updatedDoc = {
@@ -151,7 +153,7 @@ const run = async () => {
       res.send(result);
     });
 
-    app.delete('/tasks/:id', async (req, res) => {
+    app.delete('/tasks/:id', verifyJWT, async (req, res) => {
       const id = req.params.id;
 
       const query = { _id: ObjectId(id) };
